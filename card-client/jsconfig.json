@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "vueCompilerOptions": {
+    "globalTypesPath": "./src/volar-global.d.ts"
+  },
+  "exclude": ["node_modules", "dist"]
+}
