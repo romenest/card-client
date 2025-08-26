@@ -1,18 +1,16 @@
 <template>
-  <div class="main-container">
-    <div v-if="!isNicknameSet" class="center-box">
-      <div class="input-area">
-        <input
-          v-model="inputNickname"
-          @keyup.enter="setNickname"
-          placeholder="사용할 닉네임을 입력하세요"
-          class="nickname-input"
-        />
-        <button @click="setNickname" class="action-button">확인</button>
-      </div>
+  <div class="center-box">
+    <div v-if="!isNicknameSet" class="input-area">
+      <input
+        v-model="inputNickname"
+        @keyup.enter="setNickname"
+        placeholder="사용할 닉네임을 입력하세요"
+        class="nickname-input"
+      />
+      <button @click="setNickname" class="action-button">확인</button>
     </div>
 
-    <div v-else class="center-box">
+    <div v-else>
       <div class="nickname-display">
         사용할 닉네임: <strong>{{ senderName }}</strong>
       </div>
@@ -33,14 +31,15 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, defineEmits } from 'vue';
+
+const emits = defineEmits(['join-channel']); // 부모에게 이벤트를 보낼 때 사용
 
 const inputNickname = ref('');
 const senderName = ref('');
 const isNicknameSet = ref(false);
 const channels = [1, 2, 3, 4];
 
-// 닉네임을 설정하고 채널 목록 화면을 표시하는 함수
 const setNickname = () => {
   if (inputNickname.value.trim() !== '') {
     senderName.value = inputNickname.value.trim();
@@ -48,22 +47,13 @@ const setNickname = () => {
   }
 };
 
-// 채널에 입장하는 함수 (아직은 콘솔 로그만 출력)
 const joinChannel = (channel) => {
-  console.log(`${senderName.value}님이 채널 ${channel}에 입장했습니다.`);
-  // 다음 단계에서 웹소켓 통신 로직을 추가할 예정입니다.
+  // 닉네임과 채널 ID를 부모 컴포넌트로 전달
+  emits('join-channel', { nickname: senderName.value, channelId: channel });
 };
 </script>
 
 <style scoped>
-.main-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  background-color: #f0f2f5;
-}
-
 .center-box {
   display: flex;
   flex-direction: column;
@@ -76,22 +66,19 @@ const joinChannel = (channel) => {
   width: 90%;
   max-width: 500px;
 }
-
 .input-area {
   display: flex;
   gap: 10px;
-  border: 2px solid red; /* 빨간색 영역 */
+  border: 2px solid red;
   border-radius: 5px;
   padding: 5px;
   width: 100%;
 }
-
 .nickname-input {
   flex-grow: 1;
   border: none;
   outline: none;
 }
-
 .action-button {
   background-color: #007bff;
   color: white;
@@ -100,27 +87,23 @@ const joinChannel = (channel) => {
   cursor: pointer;
   border-radius: 5px;
 }
-
 .nickname-display {
   font-size: 1.2em;
   font-weight: bold;
 }
-
 .channel-list-container {
-  border: 2px solid blue; /* 파란색 영역 */
+  border: 2px solid blue;
   padding: 20px;
   border-radius: 10px;
   width: 100%;
 }
-
 .channel-list {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
-
 .channel-button {
-  background-color: #28a745; /* 초록색 */
+  background-color: #28a745;
   color: white;
   border: none;
   padding: 20px;
