@@ -9,7 +9,7 @@
           </span>
         </h2>
       </div>
-      <div ref="messageListContainer" class="message-list-container">
+      <div ref="messageListContainer" @scroll="handleScroll" class="message-list-container">
         <ul class="message-list">
           <template v-for="(msg, index) in receivedMessages" :key="index">
             <div v-if="shouldShowDate(msg, index)" class="date-separator">
@@ -74,21 +74,34 @@ const messageListContainer = ref(null);
 const userCount = ref(0);
 const usersInRoom = ref([]);
 const isUserListVisible = ref(false);
+const isScrolledToBottom = ref(true); // 스크롤바가 맨 아래에 있는지 추적하는 변수
+
+const scrollToBottom = () => {
+  nextTick(() => {
+    setTimeout(() => {
+      const container = messageListContainer.value;
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }, 15);
+  });
+};
+
+const handleScroll = () => {
+  const container = messageListContainer.value;
+  if (container) {
+    // 스크롤 위치가 맨 아래로부터 50px 이내면 '맨 아래'로 간주
+    isScrolledToBottom.value = container.scrollTop + container.clientHeight >= container.scrollHeight - 50;
+  }
+};
 
 const sendMessage = () => {
   if (message.value.trim() !== '') {
     emits('send-message', message.value.trim());
     message.value = '';
     
-    // 메시지를 보내고, DOM 업데이트 후 아주 짧은 지연을 줍니다.
-    nextTick(() => {
-      setTimeout(() => {
-        const container = messageListContainer.value;
-        if (container) {
-          container.scrollTop = container.scrollHeight;
-        }
-      }, 50); // 50ms (0.05초) 지연
-    });
+    // 내가 메시지를 보낼 때는 항상 스크롤을 내립니다.
+    scrollToBottom();
   }
 };
 
@@ -155,12 +168,19 @@ const toggleUserList = () => {
   isUserListVisible.value = !isUserListVisible.value;
 };
 
-// watch 함수는 이제 사용자 수 업데이트 로직만 담당합니다.
+// watch 함수는 이제 사용자 수 업데이트 로직과 조건부 스크롤을 담당합니다.
 watch(() => props.receivedMessages, (newMessages) => {
   const lastMessage = newMessages[newMessages.length - 1];
   if (lastMessage && lastMessage.sender === 'system' && lastMessage.userCount !== undefined) {
     userCount.value = lastMessage.userCount;
     usersInRoom.value = lastMessage.usersInRoom;
+  }
+  
+  // 새로운 메시지가 왔을 때 스크롤바가 맨 아래에 있으면 스크롤을 내립니다.
+  const isMessageFromOther = lastMessage && lastMessage.sender !== props.senderName && lastMessage.sender !== 'system';
+
+  if (isScrolledToBottom.value && isMessageFromOther) {
+    scrollToBottom();
   }
 }, { deep: true });
 </script>
@@ -245,7 +265,6 @@ watch(() => props.receivedMessages, (newMessages) => {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   padding: 20px;
 }
-/* 메시지 스타일 */
 .sender-name {
   font-weight: bold;
   color: #333;
@@ -259,6 +278,7 @@ watch(() => props.receivedMessages, (newMessages) => {
   margin: auto 5px;
 }
 .system-message {
+  min-height: 10px;
   text-align: center;
   font-style: italic;
   color: #888;
@@ -276,6 +296,7 @@ watch(() => props.receivedMessages, (newMessages) => {
   justify-content: flex-end;
 }
 .my-message {
+  min-height: 10px;
   background-color: #e0f7fa;
   border-radius: 5px;
   padding: 5px 10px;
@@ -284,6 +305,7 @@ watch(() => props.receivedMessages, (newMessages) => {
   white-space: pre-wrap;
 }
 .other-message {
+  min-height: 10px;
   background-color: #f1f1f1;
   border-radius: 5px;
   padding: 5px 10px;
@@ -294,7 +316,6 @@ watch(() => props.receivedMessages, (newMessages) => {
 .my-timestamp {
   order: -1;
 }
-/* 사용자 목록 팝업 스타일 */
 .user-list-popup {
   position: absolute;
   top: 50%;
@@ -330,6 +351,7 @@ watch(() => props.receivedMessages, (newMessages) => {
 .user-list li:last-child {
   border-bottom: none;
 }
+/* 날짜 구분선 스타일 */
 .date-separator {
   text-align: center;
   font-size: 0.8em;
