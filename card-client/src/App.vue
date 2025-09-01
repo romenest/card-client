@@ -5,7 +5,8 @@
       v-else
       :currentRoomId="currentRoomId"
       :receivedMessages="receivedMessages"
-      :senderName="senderName" @send-message="handleSendMessage"
+      :senderName="senderName"
+      @send-message="handleSendMessage"
     />
   </div>
 </template>
@@ -23,8 +24,7 @@ let ws = null;
 
 const handleJoin = (payload) => {
   senderName.value = payload.nickname;
-  // roomId를 숫자로 변환하여 저장
-  currentRoomId.value = parseInt(payload.channelId);
+  currentRoomId.value = payload.channelId;
   isJoined.value = true;
   connectWebSocket();
 };
@@ -32,14 +32,13 @@ const handleJoin = (payload) => {
 const handleSendMessage = (message) => {
   if (ws && ws.readyState === WebSocket.OPEN) {
     const chatMessage = {
+      type: "chat",
       sender: senderName.value,
       message: message,
-      // roomId를 숫자로 보냅니다.
       roomId: currentRoomId.value,
       timestamp: Date.now()
     };
-    const jsonMessage = JSON.stringify(chatMessage);
-    ws.send(jsonMessage);
+    ws.send(JSON.stringify(chatMessage));
   }
 };
 
@@ -47,11 +46,12 @@ const connectWebSocket = () => {
   if (ws && ws.readyState === WebSocket.OPEN) {
     return;
   }
-  ws = new WebSocket('ws://192.168.2.10:8080/ws/game');
+  ws = new WebSocket('ws://localhost:8080/ws/game');
 
   ws.onopen = () => {
     console.log('웹소켓 연결 성공!');
     const joinMessage = {
+      type: "system",
       sender: senderName.value,
       message: `[${senderName.value}님이 채널 ${currentRoomId.value}에 입장했습니다.]`,
       roomId: currentRoomId.value,
@@ -64,6 +64,7 @@ const connectWebSocket = () => {
     try {
       const chatMessage = JSON.parse(event.data);
       console.log('서버로부터 메시지 수신:', chatMessage);
+      // 서버로부터 받은 메시지를 배열에 추가
       receivedMessages.value.push(chatMessage);
     } catch (e) {
       console.error('메시지 파싱 오류:', e);

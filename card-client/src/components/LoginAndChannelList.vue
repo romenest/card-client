@@ -1,15 +1,19 @@
 <template>
   <div class="center-box">
-    <div v-if="!isNicknameSet" class="input-area">
-      <input
-        v-model="inputNickname"
-        @keyup.enter="setNickname"
-        placeholder="사용할 닉네임을 입력하세요"
-        class="nickname-input"
-      />
-      <button @click="setNickname" class="action-button">확인</button>
+    <div v-if="!isNicknameSet">
+      <div class="input-area">
+        <input
+          v-model="inputNickname"
+          @keyup.enter="setNickname"
+          placeholder="사용할 닉네임을 입력하세요"
+          class="nickname-input"
+        />
+        <button @click="setNickname" class="action-button">확인</button>
+      </div>
+      <div v-if="nicknameError" class="error-message">
+        {{ nicknameError }}
+      </div>
     </div>
-
     <div v-else>
       <div class="nickname-display">
         사용할 닉네임: <strong>{{ senderName }}</strong>
@@ -33,22 +37,39 @@
 <script setup>
 import { ref, defineEmits } from 'vue';
 
-const emits = defineEmits(['join-channel']); // 부모에게 이벤트를 보낼 때 사용
+const emits = defineEmits(['join-channel']);
 
 const inputNickname = ref('');
 const senderName = ref('');
 const isNicknameSet = ref(false);
+const nicknameError = ref('');
 const channels = [1, 2, 3, 4];
 
+// 닉네임 유효성 검사 함수
+const validateNickname = (nickname) => {
+  if (!nickname) {
+    return '닉네임을 입력해주세요.';
+  }
+  const hangulRegex = /[가-힣]/;
+  const isHangul = hangulRegex.test(nickname);
+  const maxLength = isHangul ? 5 : 8;
+  if (nickname.length > maxLength) {
+    return `닉네임은 ${isHangul ? '한글 5자' : '영문 8자'} 이내로 입력해주세요.`;
+  }
+  return null; // 유효성 검사 통과
+};
+
+// 닉네임을 설정하고 채널 목록 화면을 표시하는 함수
 const setNickname = () => {
-  if (inputNickname.value.trim() !== '') {
+  nicknameError.value = validateNickname(inputNickname.value.trim());
+  if (!nicknameError.value) {
     senderName.value = inputNickname.value.trim();
     isNicknameSet.value = true;
   }
 };
 
+// 채널에 입장하는 함수
 const joinChannel = (channel) => {
-  // 닉네임과 채널 ID를 부모 컴포넌트로 전달
   emits('join-channel', { nickname: senderName.value, channelId: channel });
 };
 </script>
